@@ -1,0 +1,13 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:admin@localhost:5432/ecommerce
+      - QDRANT_HOST=host.docker.internal
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ../models:/code/models

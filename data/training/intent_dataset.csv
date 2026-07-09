@@ -1,0 +1,264 @@
+nl_query,intent
+compare order counts between India and Canada,comparison
+average quantity sold,aggregation
+give me all payments records,lookup
+show employees from Support,filter
+compare order counts between India and Germany,comparison
+how many orders are there,aggregation
+list order_items,lookup
+compare revenue between India and Germany,comparison
+list suppliers from UK,filter
+show me all payments,lookup
+list every products,lookup
+highest 10 products by rating,top_n
+number of orders per supplier,group_by
+difference in revenue between India and Germany,comparison
+total revenue grouped by status,group_by
+show order_items,lookup
+what is the average total amount,aggregation
+compare revenue between India and France,comparison
+show the employees table,lookup
+how many categories are there,aggregation
+how many orders per supplier,group_by
+sales by status,group_by
+total number of categories,aggregation
+compare revenue between India and USA,comparison
+get customers from UK,filter
+how many orders per category,group_by
+number of suppliers,aggregation
+revenue by city,group_by
+highest 20 products by total_amount,top_n
+total revenue grouped by supplier,group_by
+list credit card payments,filter
+out of stock products,filter
+list customers from France,filter
+number of products,aggregation
+suppliers in Germany,filter
+compare total amount between India and Germany,comparison
+number of categories,aggregation
+list debit card payments,filter
+highest 3 products by rating,top_n
+lowest 5 products by quantity,top_n
+list every customers,lookup
+revenue by department,group_by
+number of order_items per city,group_by
+display all categories,lookup
+total revenue,aggregation
+top 15 products by rating,top_n
+how many orders per country,group_by
+cheapest 20 products,top_n
+cheapest 10 products,top_n
+compare revenue this year vs last year,comparison
+payments made by debit card,filter
+top 15 products by stock,top_n
+compare order counts between USA and Germany,comparison
+total revenue grouped by employee,group_by
+show payments via paypal,filter
+how many payments are there,aggregation
+show me all orders,lookup
+get customers from France,filter
+top 10 customers by spending,top_n
+list customers,lookup
+difference in revenue between India and Canada,comparison
+highest 3 products by stock,top_n
+list every order_items,lookup
+difference in revenue between India and France,comparison
+top 5 products by price,top_n
+what is the average order value,aggregation
+highest 15 products by total_amount,top_n
+what is the total revenue,aggregation
+sales by department,group_by
+order_items count per payment method,group_by
+count of categories,aggregation
+compare sales across categories,comparison
+total number of order_items,aggregation
+list suppliers from India,filter
+compare total amount between India and UK,comparison
+get all payments,lookup
+customers located in Canada,filter
+show the top 3 products,top_n
+compare revenue between India and UK,comparison
+get all suppliers,lookup
+how many orders per status,group_by
+lowest 20 products by price,top_n
+compare total amount between India and USA,comparison
+list cancelled orders,filter
+compare revenue between USA and UK,comparison
+compare order counts between USA and France,comparison
+show customers in USA,filter
+sum of payment amount,aggregation
+list suppliers from USA,filter
+fetch all order_items,lookup
+sum of order value,aggregation
+top 10 products by rating,top_n
+total number of customers,aggregation
+compare total amount between USA and UK,comparison
+list all orders,lookup
+show products,lookup
+total revenue grouped by country,group_by
+highest 15 products by rating,top_n
+show customers in Canada,filter
+highest 10 products by stock,top_n
+order_items per status,group_by
+show all categories,lookup
+compare order counts between USA and UK,comparison
+get suppliers from India,filter
+compare order counts between India and France,comparison
+top 15 products by price,top_n
+revenue for each supplier,group_by
+compare total amount between India and France,comparison
+list delivered orders,filter
+sales by employee,group_by
+compare revenue between USA and Germany,comparison
+payments made by paypal,filter
+compare total amount between India and Canada,comparison
+show suppliers in Canada,filter
+number of orders per employee,group_by
+order_items per department,group_by
+list every employees,lookup
+orders by supplier,group_by
+lowest 5 products by stock,top_n
+compare order counts between India and UK,comparison
+orders with status shipped,filter
+highest 10 products by quantity,top_n
+get customers from USA,filter
+sales by supplier,group_by
+get all orders,lookup
+total number of payments,aggregation
+suppliers located in France,filter
+count of payments,aggregation
+average revenue,aggregation
+compare product ratings across categories,comparison
+list all suppliers,lookup
+best 15 products,top_n
+top 20 products by total_amount,top_n
+how many orders per department,group_by
+orders with status pending,filter
+compare total amount this year vs last year,comparison
+products per category,group_by
+display all orders,lookup
+what is the total payment amount,aggregation
+view all categories,lookup
+number of employees,aggregation
+display all employees,lookup
+top 10 products by price,top_n
+give me all products records,lookup
+average order value,aggregation
+count of products,aggregation
+revenue for each category,group_by
+show me all products,lookup
+show all order_items,lookup
+highest 5 products by rating,top_n
+suppliers in France,filter
+top 15 customers by spending,top_n
+get all categories,lookup
+view all orders,lookup
+orders by department,group_by
+number of order_items per department,group_by
+total revenue last month,aggregation
+compare payment amount this year vs last year,comparison
+top 3 products by rating,top_n
+sales by city,group_by
+give me all orders records,lookup
+number of products per payment method,group_by
+customers located in Germany,filter
+customers in India,filter
+list every payments,lookup
+fetch all products,lookup
+compare revenue between India and Canada,comparison
+top 15 products by quantity,top_n
+list customers from India,filter
+difference in revenue between USA and Germany,comparison
+count of suppliers,aggregation
+revenue for each department,group_by
+number of customers,aggregation
+highest rated products,top_n
+lowest 10 products by total_amount,top_n
+orders by employee,group_by
+lowest 15 products by rating,top_n
+orders by city,group_by
+difference in revenue between USA and UK,comparison
+employees in Marketing department,filter
+list all categories,lookup
+list suppliers from Germany,filter
+total number of suppliers,aggregation
+total quantity sold,aggregation
+orders by category,group_by
+what is the average quantity sold,aggregation
+what is the total order value,aggregation
+difference in revenue between India and USA,comparison
+get suppliers from UK,filter
+show me all employees,lookup
+sales by category,group_by
+payments made by credit card,filter
+compare quantity sold this year vs last year,comparison
+total revenue grouped by city,group_by
+list orders,lookup
+fetch all suppliers,lookup
+list customers from USA,filter
+suppliers located in USA,filter
+top 3 products by total_amount,top_n
+view all employees,lookup
+highest 20 products by stock,top_n
+average payment amount,aggregation
+customers located in USA,filter
+average total amount,aggregation
+revenue by status,group_by
+total revenue grouped by department,group_by
+how does revenue this month compare to last month,comparison
+what is the average payment amount,aggregation
+show the top 5 products,top_n
+display all order_items,lookup
+best 3 products,top_n
+compare revenue between USA and France,comparison
+show all customers,lookup
+sum of total amount,aggregation
+lowest 10 products by stock,top_n
+orders per country,group_by
+suppliers located in India,filter
+how many order_items are there,aggregation
+lowest 20 products by quantity,top_n
+show the suppliers table,lookup
+list all products,lookup
+list Support department employees,filter
+compare order counts between India and USA,comparison
+top 20 products by quantity,top_n
+number of payments,aggregation
+lowest 20 products by total_amount,top_n
+difference in revenue between India and UK,comparison
+get customers from India,filter
+how many employees are there,aggregation
+orders count per country,group_by
+revenue for each status,group_by
+suppliers located in Germany,filter
+best 5 products,top_n
+get customers from Germany,filter
+show the orders table,lookup
+difference in revenue between USA and France,comparison
+compare order value this year vs last year,comparison
+top 5 products by quantity,top_n
+display all payments,lookup
+number of order_items per country,group_by
+lowest 3 products by quantity,top_n
+give me all employees records,lookup
+lowest 15 products by price,top_n
+orders by status,group_by
+show orders where status is delivered,filter
+total number of products,aggregation
+orders with status delivered,filter
+show categories,lookup
+payment status of orders,group_by
+products per payment method,group_by
+highest 20 products by price,top_n
+total total amount,aggregation
+top 3 customers by spending,top_n
+list pending orders,filter
+count of order_items,aggregation
+number of orders,aggregation
+total order value,aggregation
+lowest 15 products by stock,top_n
+view all suppliers,lookup
+what is the total quantity sold,aggregation
+sum of quantity sold,aggregation
+total revenue grouped by payment method,group_by
+orders that are pending,filter

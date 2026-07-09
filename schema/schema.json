@@ -1,0 +1,169 @@
+{
+    "tables": {
+        "categories": {
+            "primary_key": "category_id",
+            "columns": {
+                "category_id": "int",
+                "category_name": "varchar"
+            },
+            "foreign_keys": {}
+        },
+        "suppliers": {
+            "primary_key": "supplier_id",
+            "columns": {
+                "supplier_id": "int",
+                "supplier_name": "varchar",
+                "country": "varchar"
+            },
+            "foreign_keys": {}
+        },
+        "products": {
+            "primary_key": "product_id",
+            "columns": {
+                "product_id": "int",
+                "product_name": "varchar",
+                "category_id": "int",
+                "supplier_id": "int",
+                "price": "decimal",
+                "stock": "int",
+                "rating": "decimal"
+            },
+            "foreign_keys": {
+                "category_id": {
+                    "referenced_table": "categories",
+                    "referenced_column": "category_id"
+                },
+                "supplier_id": {
+                    "referenced_table": "suppliers",
+                    "referenced_column": "supplier_id"
+                }
+            }
+        },
+        "customers": {
+            "primary_key": "customer_id",
+            "columns": {
+                "customer_id": "int",
+                "first_name": "varchar",
+                "last_name": "varchar",
+                "email": "varchar",
+                "phone": "varchar",
+                "city": "varchar",
+                "state": "varchar",
+                "country": "varchar",
+                "created_at": "timestamp"
+            },
+            "foreign_keys": {}
+        },
+        "employees": {
+            "primary_key": "employee_id",
+            "columns": {
+                "employee_id": "int",
+                "employee_name": "varchar",
+                "department": "varchar"
+            },
+            "foreign_keys": {}
+        },
+        "orders": {
+            "primary_key": "order_id",
+            "columns": {
+                "order_id": "int",
+                "customer_id": "int",
+                "employee_id": "int",
+                "order_date": "timestamp",
+                "status": "varchar",
+                "total_amount": "decimal"
+            },
+            "foreign_keys": {
+                "customer_id": {
+                    "referenced_table": "customers",
+                    "referenced_column": "customer_id"
+                },
+                "employee_id": {
+                    "referenced_table": "employees",
+                    "referenced_column": "employee_id"
+                }
+            }
+        },
+        "order_items": {
+            "primary_key": "order_item_id",
+            "columns": {
+                "order_item_id": "int",
+                "order_id": "int",
+                "product_id": "int",
+                "quantity": "int",
+                "unit_price": "decimal"
+            },
+            "foreign_keys": {
+                "order_id": {
+                    "referenced_table": "orders",
+                    "referenced_column": "order_id"
+                },
+                "product_id": {
+                    "referenced_table": "products",
+                    "referenced_column": "product_id"
+                }
+            }
+        },
+        "payments": {
+            "primary_key": "payment_id",
+            "columns": {
+                "payment_id": "int",
+                "order_id": "int",
+                "payment_method": "varchar",
+                "payment_status": "varchar",
+                "payment_date": "timestamp",
+                "amount": "decimal"
+            },
+            "foreign_keys": {
+                "order_id": {
+                    "referenced_table": "orders",
+                    "referenced_column": "order_id"
+                }
+            }
+        }
+    },
+    "relationships": [
+        {
+            "from_table": "products",
+            "from_column": "category_id",
+            "to_table": "categories",
+            "to_column": "category_id"
+        },
+        {
+            "from_table": "products",
+            "from_column": "supplier_id",
+            "to_table": "suppliers",
+            "to_column": "supplier_id"
+        },
+        {
+            "from_table": "orders",
+            "from_column": "customer_id",
+            "to_table": "customers",
+            "to_column": "customer_id"
+        },
+        {
+            "from_table": "orders",
+            "from_column": "employee_id",
+            "to_table": "employees",
+            "to_column": "employee_id"
+        },
+        {
+            "from_table": "order_items",
+            "from_column": "order_id",
+            "to_table": "orders",
+            "to_column": "order_id"
+        },
+        {
+            "from_table": "order_items",
+            "from_column": "product_id",
+            "to_table": "products",
+            "to_column": "product_id"
+        },
+        {
+            "from_table": "payments",
+            "from_column": "order_id",
+            "to_table": "orders",
+            "to_column": "order_id"
+        }
+    ]
+}
