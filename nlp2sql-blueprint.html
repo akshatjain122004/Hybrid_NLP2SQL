@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NLP2SQL — Minimal LLM Cascade Architecture Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #060A15;
+  --surf:      #0C1424;
+  --surf2:     #111D33;
+  --surf3:     #172440;
+  --border:    #1E3157;
+  --border2:   #2A4170;
+  --cyan:      #22D3EE;
+  --cyan-dim:  #0E7490;
+  --green:     #86EFAC;
+  --green-dim: #16A34A;
+  --amber:     #FCD34D;
+  --amber-dim: #B45309;
+  --red:       #F87171;
+  --red-dim:   #B91C1C;
+  --purple:    #C084FC;
+  --text:      #E2E8F0;
+  --text-2:    #94A3B8;
+  --text-3:    #64748B;
+  --mono:      'JetBrains Mono', monospace;
+  --sans:      'Inter', sans-serif;
+  --radius:    8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ─── NAV ─────────────────────────────────────────────────────────────────── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,10,21,.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:.65rem 1.5rem;
+  display:flex;align-items:center;gap:1.2rem;
+  overflow-x:auto;white-space:nowrap;
+}
+nav .brand{font-family:var(--mono);font-weight:700;color:var(--cyan);font-size:.95rem;margin-right:.8rem;flex-shrink:0}
+nav a{font-size:.72rem;font-family:var(--mono);color:var(--text-2);padding:.3rem .65rem;border-radius:4px;border:1px solid transparent;transition:.2s;flex-shrink:0}
+nav a:hover,nav a.active{background:var(--surf2);border-color:var(--border2);color:var(--cyan);text-decoration:none}
+
+/* ─── HERO ─────────────────────────────────────────────────────────────────── */
+.hero{
+  padding:4rem 1.5rem 3rem;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%,rgba(34,211,238,.07) 0%,transparent 70%),
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(30,49,87,.3) 39px,rgba(30,49,87,.3) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(30,49,87,.3) 39px,rgba(30,49,87,.3) 40px);
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.hero-eyebrow{font-family:var(--mono);font-size:.72rem;color:var(--cyan-dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,6vw,4rem);font-weight:700;line-height:1.1;letter-spacing:-.02em;margin-bottom:.6rem}
+.hero h1 span{color:var(--cyan)}
+.hero-sub{font-size:1rem;color:var(--text-2);max-width:600px;margin:.5rem auto 2rem;line-height:1.6}
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;margin-bottom:2.5rem}
+.stat{text-align:center}
+.stat-val{font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--cyan)}
+.stat-label{font-size:.72rem;color:var(--text-3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+
+/* ─── PIPELINE FLOW ─────────────────────────────────────────────────────────── */
+.pipeline-wrap{
+  padding:2rem 1.5rem 3rem;
+  border-bottom:1px solid var(--border);
+  background:var(--surf);
+}
+.pipeline-title{font-family:var(--mono);font-size:.75rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;text-align:center;margin-bottom:1.5rem}
+.pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:1rem;justify-content:flex-start}
+.pipeline-stage{
+  flex-shrink:0;
+  background:var(--surf2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:.75rem 1rem;
+  min-width:120px;max-width:140px;
+  text-align:center;
+  position:relative;
+  cursor:pointer;
+  transition:.2s;
+}
+.pipeline-stage:hover{border-color:var(--cyan);background:var(--surf3);transform:translateY(-2px)}
+.pipeline-stage.llm-free{border-top:2px solid var(--green)}
+.pipeline-stage.llm-path{border-top:2px solid var(--amber)}
+.pipeline-stage.danger{border-top:2px solid var(--red)}
+.stage-num{font-family:var(--mono);font-size:.65rem;color:var(--text-3);margin-bottom:.3rem}
+.stage-name{font-family:var(--mono);font-size:.75rem;font-weight:600;color:var(--text);line-height:1.3}
+.stage-tag{font-size:.6rem;margin-top:.4rem;padding:.15rem .4rem;border-radius:3px;display:inline-block;font-family:var(--mono)}
+.stage-tag.green{background:rgba(134,239,172,.12);color:var(--green)}
+.stage-tag.amber{background:rgba(252,211,77,.12);color:var(--amber)}
+.stage-tag.red{background:rgba(248,113,113,.12);color:var(--red)}
+.arrow{
+  display:flex;align-items:center;padding:0 .3rem;flex-shrink:0;color:var(--text-3);font-size:1rem
+}
+.pipeline-legend{display:flex;gap:1.5rem;justify-content:center;margin-top:1.2rem;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--text-2);font-family:var(--mono)}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+
+/* ─── SECTIONS ──────────────────────────────────────────────────────────────── */
+.section{padding:3rem 1.5rem;border-bottom:1px solid var(--border);max-width:1100px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:.68rem;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem}
+.section-title{font-family:var(--mono);font-size:1.5rem;font-weight:700;margin-bottom:.5rem;color:var(--text)}
+.section-desc{color:var(--text-2);font-size:.9rem;max-width:680px;margin-bottom:2rem;line-height:1.7}
+
+/* ─── LAYER CARDS ─────────────────────────────────────────────────────────── */
+.layer{
+  background:var(--surf);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:1.5rem;
+  overflow:hidden;
+}
+.layer-header{
+  padding:1rem 1.2rem;
+  display:flex;align-items:center;gap:1rem;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  background:var(--surf2);
+}
+.layer-badge{
+  font-family:var(--mono);font-size:.65rem;font-weight:700;
+  padding:.25rem .6rem;border-radius:4px;flex-shrink:0;
+}
+.layer-badge.green{background:rgba(134,239,172,.15);color:var(--green);border:1px solid rgba(134,239,172,.3)}
+.layer-badge.amber{background:rgba(252,211,77,.15);color:var(--amber);border:1px solid rgba(252,211,77,.3)}
+.layer-badge.red{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.layer-badge.purple{background:rgba(192,132,252,.15);color:var(--purple);border:1px solid rgba(192,132,252,.3)}
+.layer-header-text h3{font-family:var(--mono);font-size:.95rem;font-weight:600;margin-bottom:.15rem}
+.layer-header-text p{font-size:.78rem;color:var(--text-2)}
+.layer-body{padding:1.2rem}
+.components-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+.comp{
+  background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem;position:relative;
+}
+.comp-name{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--cyan);margin-bottom:.4rem}
+.comp-file{font-family:var(--mono);font-size:.68rem;color:var(--text-3);margin-bottom:.6rem}
+.comp-desc{font-size:.8rem;color:var(--text-2);line-height:1.6;margin-bottom:.7rem}
+.comp-tool{display:flex;gap:.4rem;flex-wrap:wrap}
+.tool-tag{font-family:var(--mono);font-size:.62rem;padding:.2rem .5rem;border-radius:3px;background:var(--surf3);border:1px solid var(--border2);color:var(--text-2)}
+.io-row{display:flex;gap:.4rem;align-items:baseline;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)}
+.io-label{font-family:var(--mono);font-size:.62rem;color:var(--text-3);flex-shrink:0}
+.io-val{font-family:var(--mono);font-size:.68rem;color:var(--text-2)}
+
+/* ─── EXAMPLE FLOW ─────────────────────────────────────────────────────────── */
+.example-box{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);
+  margin:2rem 0;overflow:hidden;
+}
+.example-header{background:var(--surf2);padding:.7rem 1.2rem;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.75rem;color:var(--text-2)}
+.example-body{padding:1.2rem;display:flex;flex-direction:column;gap:1rem}
+.ex-step{display:flex;gap:1rem;align-items:flex-start}
+.ex-step-num{background:var(--cyan-dim);color:var(--bg);font-family:var(--mono);font-size:.65rem;font-weight:700;padding:.2rem .45rem;border-radius:3px;flex-shrink:0;margin-top:.15rem}
+.ex-step-content h4{font-family:var(--mono);font-size:.78rem;color:var(--text);margin-bottom:.3rem}
+.ex-step-content p{font-size:.78rem;color:var(--text-2)}
+
+/* ─── CODE BLOCKS ─────────────────────────────────────────────────────────── */
+pre{
+  background:var(--surf2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.2rem;overflow-x:auto;font-family:var(--mono);font-size:.75rem;
+  line-height:1.7;color:#a8b8d0;margin:.75rem 0;
+}
+.kw{color:#C084FC}.cn{color:#22D3EE}.st{color:#86EFAC}.cm{color:#475569;font-style:italic}
+.nm{color:#FCD34D}.fn{color:#F472B6}.op{color:#94A3B8}
+
+/* ─── DIRECTORY TREE ─────────────────────────────────────────────────────── */
+.tree-wrap{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+.tree-header{
+  background:#0a1929;padding:.6rem 1rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.5rem;
+}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.tree-body{padding:1.2rem 1.5rem;overflow-x:auto}
+.tree-body pre{background:transparent;border:none;padding:0;margin:0;font-size:.76rem;color:#a8b8d0}
+.dir{color:var(--cyan)}.file{color:var(--text-2)}.comment{color:var(--text-3);font-style:italic}.important{color:var(--amber)}
+
+/* ─── BUILD SEQUENCE ─────────────────────────────────────────────────────── */
+.phases{position:relative;padding-left:2rem}
+.phases::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--cyan),var(--purple),var(--green))}
+.phase{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:1.2rem;overflow:hidden;position:relative;
+}
+.phase::before{
+  content:'';position:absolute;left:-2rem;top:1.4rem;width:14px;height:14px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--cyan);
+}
+.phase-header{
+  padding:.9rem 1.2rem;display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--border);background:var(--surf2);
+}
+.phase-num{font-family:var(--mono);font-size:.7rem;font-weight:700;background:var(--surf3);border:1px solid var(--border2);color:var(--cyan);padding:.25rem .6rem;border-radius:4px}
+.phase-title{font-family:var(--mono);font-size:.9rem;font-weight:600;margin-bottom:.1rem}
+.phase-time{font-size:.72rem;color:var(--text-3);font-family:var(--mono)}
+.phase-body{padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.8rem}
+.phase-block h4{font-family:var(--mono);font-size:.75rem;color:var(--text-2);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.06em}
+.phase-block ul{list-style:none;display:flex;flex-direction:column;gap:.2rem}
+.phase-block ul li{font-size:.8rem;color:var(--text-2);padding-left:1rem;position:relative}
+.phase-block ul li::before{content:'→';position:absolute;left:0;color:var(--cyan-dim)}
+.phase-output{
+  background:rgba(134,239,172,.06);border:1px solid rgba(134,239,172,.2);border-radius:5px;
+  padding:.5rem .8rem;font-family:var(--mono);font-size:.72rem;color:var(--green);
+}
+.phase-output::before{content:'✓ Output: '}
+
+/* ─── TECH STACK TABLE ─────────────────────────────────────────────────────── */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem}
+.tech-card{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;
+}
+.tech-card-name{font-family:var(--mono);font-size:.85rem;font-weight:600;color:var(--cyan);margin-bottom:.2rem}
+.tech-card-purpose{font-size:.78rem;color:var(--text-2);margin-bottom:.5rem}
+.tech-card-layer{font-family:var(--mono);font-size:.65rem;color:var(--text-3);padding:.15rem .4rem;background:var(--surf3);border-radius:3px;display:inline-block}
+
+/* ─── METRICS ─────────────────────────────────────────────────────────────── */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.metric-card{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;
+  border-top:2px solid var(--cyan);
+}
+.metric-val{font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--cyan);line-height:1}
+.metric-label{font-size:.78rem;color:var(--text-2);margin-top:.3rem}
+.metric-note{font-family:var(--mono);font-size:.68rem;color:var(--text-3);margin-top:.4rem}
+.progress-bar{height:4px;background:var(--surf3);border-radius:2px;margin-top:.7rem}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+
+/* ─── IR EXAMPLE ─────────────────────────────────────────────────────────── */
+.ir-demo{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.ir-demo{grid-template-columns:1fr}}
+.ir-block{background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ir-block-header{background:var(--surf2);padding:.5rem 1rem;font-family:var(--mono);font-size:.7rem;color:var(--text-2);border-bottom:1px solid var(--border)}
+
+/* ─── CONFIDENCE ROUTING DIAGRAM ─────────────────────────────────────────── */
+.routing-diagram{
+  background:var(--surf);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.5rem;margin:1rem 0;text-align:center;
+}
+.routing-row{display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.routing-box{font-family:var(--mono);font-size:.75rem;padding:.5rem 1rem;border-radius:5px;border:1px solid var(--border2);background:var(--surf2);min-width:120px;text-align:center}
+.routing-box.high{border-color:var(--green-dim);color:var(--green)}
+.routing-box.low{border-color:var(--amber-dim);color:var(--amber)}
+.routing-box.block{border-color:var(--red-dim);color:var(--red)}
+.routing-arrow{color:var(--text-3);font-size:.85rem}
+.threshold-note{font-family:var(--mono);font-size:.7rem;color:var(--text-3);margin-top:.5rem}
+
+/* ─── FOOTER ──────────────────────────────────────────────────────────────── */
+footer{text-align:center;padding:2rem 1.5rem;color:var(--text-3);font-family:var(--mono);font-size:.72rem;border-top:1px solid var(--border)}
+
+/* ─── ANIMATIONS ──────────────────────────────────────────────────────────── */
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,.0)}50%{box-shadow:0 0 8px 2px rgba(34,211,238,.25)}}
+.pipeline-stage.active-demo{animation:pulse-glow 2s ease-in-out infinite}
+@keyframes slide-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.section{animation:slide-in .4s ease both}
+
+/* responsive */
+@media(max-width:600px){
+  .hero{padding:2.5rem 1rem 2rem}
+  .section{padding:2rem 1rem}
+  .hero-stats{gap:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─────────────────────────────────────────────────────────────────── -->
+<nav>
+  <span class="brand">NLP2SQL</span>
+  <a href="#overview">Overview</a>
+  <a href="#pipeline">Pipeline</a>
+  <a href="#layers">Layers</a>
+  <a href="#ir-example">IR Example</a>
+  <a href="#directory">Directory</a>
+  <a href="#sequence">Build Seq</a>
+  <a href="#techstack">Tech Stack</a>
+  <a href="#metrics">Metrics</a>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────────────────────────────────── -->
+<div class="hero" id="overview">
+  <div class="hero-eyebrow">Project Blueprint — E-Commerce NL2SQL System</div>
+  <h1>NLP<span>2</span>SQL</h1>
+  <p class="hero-sub">A cascade architecture that resolves natural language queries to SQL using deterministic pre-processing layers — invoking the LLM only when all cheaper methods fail.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-val">9</div><div class="stat-label">Layers</div></div>
+    <div class="stat"><div class="stat-val">20</div><div class="stat-label">Components</div></div>
+    <div class="stat"><div class="stat-val">80%+</div><div class="stat-label">LLM Bypass Target</div></div>
+    <div class="stat"><div class="stat-val">11</div><div class="stat-label">Build Phases</div></div>
+  </div>
+</div>
+
+<!-- ─── PIPELINE VISUALIZATION ───────────────────────────────────────────────── -->
+<div class="pipeline-wrap" id="pipeline">
+  <div class="pipeline-title">Query Execution Flow — Left to Right</div>
+  <div class="pipeline" id="pipe-flow">
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-1')">
+      <div class="stage-num">L1</div>
+      <div class="stage-name">Pre-Processing</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-2')">
+      <div class="stage-num">L2</div>
+      <div class="stage-name">Understanding</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-3')">
+      <div class="stage-num">L3</div>
+      <div class="stage-name">Cache Check</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-4')">
+      <div class="stage-num">L4</div>
+      <div class="stage-name">Resolution</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-5')">
+      <div class="stage-num">L5</div>
+      <div class="stage-name">SQL Compile</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-path" onclick="scrollTo('#layer-6')">
+      <div class="stage-num">L6</div>
+      <div class="stage-name">Confidence + Route</div>
+      <span class="stage-tag amber">LLM if Low</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage danger" onclick="scrollTo('#layer-7')">
+      <div class="stage-num">L7</div>
+      <div class="stage-name">Validation</div>
+      <span class="stage-tag red">Guardrails</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-8')">
+      <div class="stage-num">L8</div>
+      <div class="stage-name">Execution</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+    <div class="arrow">→</div>
+
+    <div class="pipeline-stage llm-free" onclick="scrollTo('#layer-9')">
+      <div class="stage-num">L9</div>
+      <div class="stage-name">Feedback</div>
+      <span class="stage-tag green">LLM-Free</span>
+    </div>
+  </div>
+  <div class="pipeline-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>LLM-Free path (target: 80%+ of queries)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>LLM Fallback (last resort, ~20%)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Safety guardrail (always runs)</div>
+  </div>
+</div>
+
+<!-- ─── LAYERS ────────────────────────────────────────────────────────────────── -->
+<div class="section" id="layers">
+  <div class="section-label">Architecture Deep-Dive</div>
+  <div class="section-title">All 9 Layers</div>
+  <div class="section-desc">Every layer is independently testable. Build and validate each one before connecting to the next. The goal is that each layer should reduce the load on the one after it.</div>
+
+  <!-- LAYER 1 -->
+  <div class="layer" id="layer-1">
+    <div class="layer-header">
+      <span class="layer-badge green">L1 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>Pre-Processing Layer</h3>
+        <p>First touch on raw user input — clean, normalize, tokenize before anything else runs</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">Normalizer</div>
+          <div class="comp-file">pipeline/normalizer.py</div>
+          <div class="comp-desc">Lowercases input, strips filler phrases ("can you please", "tell me", "I want to know"), corrects common spelling errors using <code>pyspellchecker</code>, and standardizes date formats ("last month", "Q3", "yesterday"). This alone eliminates a massive amount of variation.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">pyspellchecker</span>
+            <span class="tool-tag">re (regex)</span>
+            <span class="tool-tag">python-dateutil</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Raw user string</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Cleaned, lowercase string</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Tokenizer + POS Tagger</div>
+          <div class="comp-file">pipeline/tokenizer.py</div>
+          <div class="comp-desc">Tokenizes and runs Part-of-Speech tagging via spaCy. Identifies nouns (likely entity values or table names), verbs (action: show/find/count), adjectives (filters: highest/latest), and numbers. These tags feed into intent classification and entity extraction downstream.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">spaCy (en_core_web_sm)</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Cleaned string</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Token list with POS tags</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 2 -->
+  <div class="layer" id="layer-2">
+    <div class="layer-header">
+      <span class="layer-badge green">L2 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>Understanding Layer</h3>
+        <p>Classifies what the user wants, extracts values, and links query words to your actual schema</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">Intent Classifier</div>
+          <div class="comp-file">pipeline/intent_classifier.py</div>
+          <div class="comp-desc">A lightweight sklearn classifier (Logistic Regression or SVM) trained on 200–300 labeled (query, intent) examples. Classifies queries into: <strong>lookup</strong>, <strong>filter</strong>, <strong>aggregation</strong>, <strong>top_n</strong>, <strong>comparison</strong>, <strong>group_by</strong>. Also outputs a confidence score — the key signal for routing later. This model is fast (&lt;5ms) and needs no API call.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">scikit-learn</span>
+            <span class="tool-tag">TF-IDF vectorizer</span>
+            <span class="tool-tag">joblib (persist)</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Cleaned tokens + POS tags</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">intent: str, confidence: float</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Entity Extractor</div>
+          <div class="comp-file">pipeline/entity_extractor.py</div>
+          <div class="comp-desc">Extracts concrete values from the query: dates/ranges, numeric thresholds, product names, category names, user IDs. Uses spaCy NER for named entities and custom regex patterns for domain-specific values. Output is a typed dict of extracted slot values to fill into the IR.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">spaCy NER</span>
+            <span class="tool-tag">regex</span>
+            <span class="tool-tag">python-dateutil</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Tokens + POS</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">{"date_range": ..., "limit": 10, ...}</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Schema Linker</div>
+          <div class="comp-file">pipeline/schema_linker.py</div>
+          <div class="comp-desc">The most critical component. Maps words from the user query to your actual table and column names. Uses fuzzy string matching to handle typos and synonyms ("staff" → employees, "revenue" → total_amount). Backed by a manually curated synonyms.json dictionary for your e-commerce domain. Reports a link confidence score per token.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">rapidfuzz</span>
+            <span class="tool-tag">synonyms.json</span>
+            <span class="tool-tag">schema.json</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Entities + all query tokens</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">{"products": [...cols], "orders": [...cols]}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 3 -->
+  <div class="layer" id="layer-3">
+    <div class="layer-header">
+      <span class="layer-badge green">L3 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>Semantic Cache Layer</h3>
+        <p>Checks Qdrant for near-duplicate past queries — cache hit = skip layers 4 &amp; 5 entirely</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">Semantic Cache</div>
+          <div class="comp-file">cache/semantic_cache.py</div>
+          <div class="comp-desc">Encodes the normalized query using sentence-transformers and searches Qdrant for the nearest past query above a cosine similarity threshold (e.g., 0.92). On a hit, retrieves the cached SQL template and swaps in the newly extracted entity values. On a miss, passes through to the Resolution layer. This eliminates LLM calls for all repeat-pattern queries — in real e-commerce usage, 40–60% of queries follow repeating patterns.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Qdrant</span>
+            <span class="tool-tag">sentence-transformers</span>
+            <span class="tool-tag">all-MiniLM-L6-v2</span>
+          </div>
+          <div class="io-row"><span class="io-label">HIT →</span><span class="io-val">SQL template with slot-filled values → skip to L7</span></div>
+          <div class="io-row"><span class="io-label">MISS →</span><span class="io-val">Continue to L4</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Cache Warmer</div>
+          <div class="comp-file">cache/cache_warmer.py</div>
+          <div class="comp-desc">A background service (run as a cron or startup task) that seeds Qdrant with nl_sql_pairs.json — your manually curated list of known (NL query, SQL) pairs. Also runs nightly to embed and load any new confirmed pairs from the logger. This is how your cache improves over time without touching the model.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Qdrant client</span>
+            <span class="tool-tag">APScheduler</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">nl_sql_pairs.json / logger DB</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Qdrant collection updated</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 4 -->
+  <div class="layer" id="layer-4">
+    <div class="layer-header">
+      <span class="layer-badge green">L4 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>Resolution Layer</h3>
+        <p>Builds the Intermediate Representation (IR) — a structured object that compiles to SQL without any ML</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">IR Builder</div>
+          <div class="comp-file">pipeline/ir_builder.py</div>
+          <div class="comp-desc">Constructs the Intermediate Representation — a Python dataclass or typed dict with fields: select, from_, joins, where, group_by, order_by, limit. Fills each field from the outputs of L2: intent → select/aggregation shape, entities → where conditions, schema links → table/column names. The IR is language-agnostic and maps cleanly to SQL clauses.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Python dataclass</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">intent, entities, schema links</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">IR dataclass (structured)</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">JOIN Resolver</div>
+          <div class="comp-file">db/schema_graph.py</div>
+          <div class="comp-desc">Models your e-commerce database schema as a graph (networkx). Nodes are tables; edges are foreign-key relationships. When the IR requires data from two or more tables, BFS finds the shortest path between them and adds the correct JOIN chain automatically. This replaces one of the hardest things LLMs do in NL2SQL — JOIN inference — with a deterministic graph traversal.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">networkx</span>
+            <span class="tool-tag">schema.json</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Required tables from IR</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">JOIN chain added to IR</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Template Engine</div>
+          <div class="comp-file">pipeline/template_engine.py</div>
+          <div class="comp-desc">For the most common query patterns (top-N products, total revenue by period, orders per customer, etc.), stores pre-written SQL templates as JSON with named slots. Matches the current intent + entity combination to a template fingerprint. On match, fills slots with extracted values — zero SQL generation needed. Run this before IR Builder for the fastest possible path.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">templates.json</span>
+            <span class="tool-tag">Jinja2 (optional)</span>
+          </div>
+          <div class="io-row"><span class="io-label">HIT →</span><span class="io-val">Fully filled SQL string → skip to L7</span></div>
+          <div class="io-row"><span class="io-label">MISS →</span><span class="io-val">Fall through to IR Builder</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 5 -->
+  <div class="layer" id="layer-5">
+    <div class="layer-header">
+      <span class="layer-badge green">L5 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>SQL Compilation Layer</h3>
+        <p>Deterministically converts the IR into a valid SQL string — pure Python, no model, no ambiguity</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">IR → SQL Compiler</div>
+          <div class="comp-file">pipeline/sql_compiler.py</div>
+          <div class="comp-desc">A pure Python function that reads the IR dataclass and serializes it into a valid SQL string. Maps: select → SELECT clause, from_ + joins → FROM/JOIN, where → WHERE (with proper AND chaining), group_by → GROUP BY, order_by → ORDER BY with direction, limit → LIMIT. Because the IR is already structured and validated, this function never fails if the IR is valid. It's just string assembly.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Pure Python</span>
+            <span class="tool-tag">No dependencies</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">IR dataclass (complete)</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Raw SQL string</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 6 -->
+  <div class="layer" id="layer-6">
+    <div class="layer-header">
+      <span class="layer-badge amber">L6 · LLM Decision Gate</span>
+      <div class="layer-header-text">
+        <h3>Confidence Scoring + LangGraph Routing</h3>
+        <p>Scores how certain the pipeline is, then routes: deterministic path or LLM fallback</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="routing-diagram">
+        <div class="routing-row">
+          <div class="routing-box">Score pipeline output</div>
+          <div class="routing-arrow">→</div>
+          <div class="routing-box">Composite confidence score</div>
+          <div class="routing-arrow">→</div>
+        </div>
+        <div class="routing-row">
+          <div class="routing-box high">Score ≥ 0.75 → Compiled SQL</div>
+          <div style="color:var(--text-3);font-family:var(--mono);font-size:.8rem;padding:0 .5rem">or</div>
+          <div class="routing-box low">Score &lt; 0.75 → LLM Fallback</div>
+          <div style="color:var(--text-3);font-family:var(--mono);font-size:.8rem;padding:0 .5rem">or</div>
+          <div class="routing-box block">Unsafe → Reject</div>
+        </div>
+        <div class="threshold-note">Threshold is configurable. Start at 0.75, tune based on observed error rates.</div>
+      </div>
+      <div class="components-grid" style="margin-top:1rem">
+        <div class="comp">
+          <div class="comp-name">Confidence Scorer</div>
+          <div class="comp-file">router/confidence_scorer.py</div>
+          <div class="comp-desc">Combines 4 signals into a single 0–1 confidence score: (1) intent classifier probability, (2) schema linker match score (rapidfuzz ratio), (3) entity extraction completeness (all expected slots filled?), (4) IR completeness (no null required fields). Weighted average — you tune weights based on which signals are most reliable in your domain.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Pure Python</span>
+            <span class="tool-tag">Weighted average</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Intent conf, schema score, entity fill rate</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">confidence: float (0.0–1.0)</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">LangGraph Router</div>
+          <div class="comp-file">router/langgraph_router.py</div>
+          <div class="comp-desc">A LangGraph StateGraph with three conditional edges: (1) HIGH confidence → pass compiled SQL to validation, (2) LOW confidence → invoke LLM fallback node, (3) UNSAFE → reject immediately. State carries the full pipeline context so the LLM fallback receives pre-linked schema, extracted entities, and detected intent — not just the raw query.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">LangGraph</span>
+            <span class="tool-tag">StateGraph</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Pipeline state + confidence score</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Route decision + SQL or LLM call</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">LLM Fallback Handler</div>
+          <div class="comp-file">llm/fallback_handler.py</div>
+          <div class="comp-desc">Invoked only on low-confidence queries. Builds a narrow prompt: pre-linked table names, only the relevant column subset (not the full schema), detected intent, and extracted entities. This makes the LLM call much cheaper and more accurate than a raw NL→SQL prompt. Tags the result as LLM-generated for the miss tracker.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">OpenAI / Gemini</span>
+            <span class="tool-tag">Narrow prompt</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Linked schema subset + context</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">SQL string + source="llm" tag</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 7 -->
+  <div class="layer" id="layer-7">
+    <div class="layer-header">
+      <span class="layer-badge red">L7 · Always Runs</span>
+      <div class="layer-header-text">
+        <h3>Validation Layer</h3>
+        <p>Every SQL — whether compiled or LLM-generated — passes through this before touching the database</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">SQL Syntax Validator</div>
+          <div class="comp-file">validator/syntax_validator.py</div>
+          <div class="comp-desc">Parses the SQL string with sqlglot before execution. Catches syntax errors, unknown functions, and malformed clauses. sqlglot supports multiple SQL dialects — configure for your target DB (PostgreSQL). If parsing fails, the query is rejected immediately with a structured error, never sent to the database.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">sqlglot</span>
+          </div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Read-Only Enforcer</div>
+          <div class="comp-file">validator/safety_guard.py</div>
+          <div class="comp-desc">Operates at two levels: (1) string-level: rejects any query containing INSERT, UPDATE, DELETE, DROP, TRUNCATE, ALTER, CREATE, GRANT — even in comments. (2) AST-level: uses sqlglot's parsed AST to confirm the root node is a SELECT statement. Double-layer protection so no prompt injection can bypass it.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">sqlglot AST</span>
+            <span class="tool-tag">regex</span>
+          </div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Table/Column Whitelist</div>
+          <div class="comp-file">validator/whitelist.py</div>
+          <div class="comp-desc">Extracts all table and column references from the parsed AST and checks each one against a whitelist loaded from schema.json. Rejects queries accessing tables or columns outside the permitted list. Prevents data exfiltration and schema enumeration attacks, especially important when the LLM fallback is active.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">sqlglot AST</span>
+            <span class="tool-tag">schema.json</span>
+          </div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Dry Run (EXPLAIN)</div>
+          <div class="comp-file">validator/dry_run.py</div>
+          <div class="comp-desc">Sends the validated query to the DB as EXPLAIN (not EXPLAIN ANALYZE) — this computes the query plan without executing it. Catches missing-table errors, type mismatches, and performance-catastrophic queries (e.g., cross-join with no predicate). Gate: reject if EXPLAIN returns an error or estimated rows &gt; configurable threshold.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">psycopg2 / SQLAlchemy</span>
+            <span class="tool-tag">EXPLAIN</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 8 -->
+  <div class="layer" id="layer-8">
+    <div class="layer-header">
+      <span class="layer-badge green">L8 · LLM-Free</span>
+      <div class="layer-header-text">
+        <h3>Execution Layer</h3>
+        <p>Runs the validated SQL, formats results into structured JSON for the API response</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">Query Executor</div>
+          <div class="comp-file">db/executor.py</div>
+          <div class="comp-desc">Executes the SQL using a connection pool (SQLAlchemy). Enforces a query timeout (configurable — default 10s). Handles empty result sets gracefully. Returns raw rows as list of dicts using cursor.description for column names. This is the only point of contact with the actual database — everything before this is stateless processing.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">SQLAlchemy</span>
+            <span class="tool-tag">Connection pool</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Validated SQL string</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">List[Dict] raw results</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Result Formatter</div>
+          <div class="comp-file">db/result_formatter.py</div>
+          <div class="comp-desc">Converts raw query results into a clean API response: JSON with columns, rows, row_count, execution_time_ms, source (deterministic | template | cache | llm), and the generated SQL itself (for debugging/transparency). The source field is critical — it tells you and your users how the answer was derived.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Pure Python</span>
+          </div>
+          <div class="io-row"><span class="io-label">IN →</span><span class="io-val">Raw rows, metadata</span></div>
+          <div class="io-row"><span class="io-label">OUT →</span><span class="io-val">Structured JSON response</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 9 -->
+  <div class="layer" id="layer-9">
+    <div class="layer-header">
+      <span class="layer-badge purple">L9 · Feedback Loop</span>
+      <div class="layer-header-text">
+        <h3>Feedback Layer</h3>
+        <p>Every query teaches the system — cache expands, LLM bypass rate improves over time</p>
+      </div>
+    </div>
+    <div class="layer-body">
+      <div class="components-grid">
+        <div class="comp">
+          <div class="comp-name">Query Logger</div>
+          <div class="comp-file">feedback/query_logger.py</div>
+          <div class="comp-desc">Logs every query tuple: (timestamp, nl_query, generated_sql, source, execution_time_ms, row_count, success). Stored in a lightweight PostgreSQL table or SQLite for local dev. This log is your training data factory — every confirmed success is a candidate for a new cache entry or template.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">SQLAlchemy</span>
+            <span class="tool-tag">PostgreSQL</span>
+          </div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Miss Tracker</div>
+          <div class="comp-file">feedback/miss_tracker.py</div>
+          <div class="comp-desc">Flags all queries where source="llm" and queues them for review. After manual verification that the LLM-generated SQL was correct, these pairs are promoted to nl_sql_pairs.json for cache seeding. This is how you systematically shrink the LLM fallback rate: each verified miss becomes a future cache hit.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">Query logger DB</span>
+          </div>
+          <div class="io-row"><span class="io-label">Goal →</span><span class="io-val">LLM fallback rate falls as cache grows</span></div>
+        </div>
+        <div class="comp">
+          <div class="comp-name">Intent Dataset Grower</div>
+          <div class="comp-file">feedback/dataset_grower.py</div>
+          <div class="comp-desc">Extracts new query + intent pairs from the log (using the intent the classifier assigned, confirmed by successful execution). Appends to intent_dataset.csv. Periodically retrain the sklearn intent classifier on the expanded dataset to improve low-confidence cases. The classifier gets better as traffic grows.</div>
+          <div class="comp-tool">
+            <span class="tool-tag">pandas</span>
+            <span class="tool-tag">scikit-learn</span>
+          </div>
+          <div class="io-row"><span class="io-label">Goal →</span><span class="io-val">Classifier accuracy improves over time</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── IR EXAMPLE ────────────────────────────────────────────────────────────── -->
+<div class="section" id="ir-example">
+  <div class="section-label">Worked Example</div>
+  <div class="section-title">Query → IR → SQL</div>
+  <div class="section-desc">How the pipeline processes: <em>"show me the top 10 products by revenue in the last month"</em></div>
+
+  <div class="example-box">
+    <div class="example-header">🟢 Full deterministic path — no LLM involved</div>
+    <div class="example-body">
+      <div class="ex-step">
+        <span class="ex-step-num">L1</span>
+        <div class="ex-step-content">
+          <h4>After Pre-Processing</h4>
+          <p>"show me the top 10 products by revenue in the last month"<br>→ <code style="color:var(--green);font-family:var(--mono);font-size:.78rem">"top 10 products revenue last month"</code></p>
+        </div>
+      </div>
+      <div class="ex-step">
+        <span class="ex-step-num">L2</span>
+        <div class="ex-step-content">
+          <h4>After Understanding</h4>
+          <p>Intent: <code style="color:var(--cyan);font-family:var(--mono);font-size:.78rem">top_n (conf: 0.93)</code> &nbsp;|&nbsp; Entities: <code style="color:var(--cyan);font-family:var(--mono);font-size:.78rem">limit=10, date_range=last_month</code><br>Schema links: "products" → <code style="color:var(--amber);font-family:var(--mono);font-size:.78rem">products</code> table, "revenue" → <code style="color:var(--amber);font-family:var(--mono);font-size:.78rem">order_items.subtotal</code></p>
+        </div>
+      </div>
+      <div class="ex-step">
+        <span class="ex-step-num">L3</span>
+        <div class="ex-step-content">
+          <h4>Cache Check</h4>
+          <p>Similar query found with score 0.88 — below 0.92 threshold (different date range). Cache miss → continue.</p>
+        </div>
+      </div>
+      <div class="ex-step">
+        <span class="ex-step-num">L4</span>
+        <div class="ex-step-content">
+          <h4>IR Built</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ir-demo" style="margin-top:1rem">
+    <div class="ir-block">
+      <div class="ir-block-header">Intermediate Representation (IR)</div>
+<pre>{
+  <span class="kw">"intent"</span>: <span class="st">"top_n"</span>,
+  <span class="kw">"select"</span>: [
+    <span class="st">"p.product_name"</span>,
+    <span class="st">"SUM(oi.subtotal) AS total_revenue"</span>
+  ],
+  <span class="kw">"from_"</span>: <span class="st">"products p"</span>,
+  <span class="kw">"joins"</span>: [
+    {
+      <span class="kw">"table"</span>: <span class="st">"order_items oi"</span>,
+      <span class="kw">"on"</span>: <span class="st">"p.id = oi.product_id"</span>
+    },
+    {
+      <span class="kw">"table"</span>: <span class="st">"orders o"</span>,
+      <span class="kw">"on"</span>: <span class="st">"oi.order_id = o.id"</span>
+    }
+  ],
+  <span class="kw">"where"</span>: [
+    <span class="st">"o.created_at &gt;= DATE_TRUNC('month', NOW() - INTERVAL '1 month')"</span>,
+    <span class="st">"o.created_at &lt; DATE_TRUNC('month', NOW())"</span>
+  ],
+  <span class="kw">"group_by"</span>: [<span class="st">"p.product_name"</span>],
+  <span class="kw">"order_by"</span>: [
+    {<span class="kw">"col"</span>: <span class="st">"total_revenue"</span>, <span class="kw">"dir"</span>: <span class="st">"DESC"</span>}
+  ],
+  <span class="kw">"limit"</span>: <span class="nm">10</span>
+}</pre>
+    </div>
+    <div class="ir-block">
+      <div class="ir-block-header">Compiled SQL (from ir_compiler.py)</div>
+<pre><span class="kw">SELECT</span>
+  p.product_name,
+  <span class="fn">SUM</span>(oi.subtotal) <span class="kw">AS</span> total_revenue
+<span class="kw">FROM</span> products p
+<span class="kw">JOIN</span> order_items oi
+  <span class="kw">ON</span> p.id <span class="op">=</span> oi.product_id
+<span class="kw">JOIN</span> orders o
+  <span class="kw">ON</span> oi.order_id <span class="op">=</span> o.id
+<span class="kw">WHERE</span>
+  o.created_at <span class="op">&gt;=</span> <span class="fn">DATE_TRUNC</span>(
+    <span class="st">'month'</span>, <span class="fn">NOW</span>() <span class="op">-</span> <span class="kw">INTERVAL</span> <span class="st">'1 month'</span>
+  )
+  <span class="kw">AND</span> o.created_at <span class="op">&lt;</span> <span class="fn">DATE_TRUNC</span>(
+    <span class="st">'month'</span>, <span class="fn">NOW</span>()
+  )
+<span class="kw">GROUP BY</span> p.product_name
+<span class="kw">ORDER BY</span> total_revenue <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="nm">10</span><span class="op">;</span></pre>
+    </div>
+  </div>
+  <p style="font-size:.78rem;color:var(--text-3);font-family:var(--mono);margin-top:.5rem">↑ Zero LLM calls. JOINs resolved via BFS on the schema graph. Date range from entity extractor. Pure Python compilation.</p>
+</div>
+
+<!-- ─── DIRECTORY STRUCTURE ───────────────────────────────────────────────────── -->
+<div class="section" id="directory">
+  <div class="section-label">Project Structure</div>
+  <div class="section-title">Directory Layout</div>
+  <div class="section-desc">Every file has exactly one responsibility. Build the skeleton first — even if files are empty — so imports never break during development.</div>
+  <div class="tree-wrap">
+    <div class="tree-header">
+      <div class="dot" style="background:#FF5F57"></div>
+      <div class="dot" style="background:#FEBC2E"></div>
+      <div class="dot" style="background:#28C840"></div>
+      <span style="font-family:var(--mono);font-size:.72rem;color:var(--text-3);margin-left:.5rem">nlp2sql/ — project root</span>
+    </div>
+    <div class="tree-body">
+<pre><span class="dir">nlp2sql/</span>
+│
+├── <span class="dir">app/</span>                         <span class="comment"># All application code lives here</span>
+│   ├── <span class="important">main.py</span>                  <span class="comment"># FastAPI entry point — routes /query endpoint</span>
+│   │
+│   ├── <span class="dir">pipeline/</span>                <span class="comment"># L1 + L2 + L4 + L5: The deterministic core</span>
+│   │   ├── __init__.py
+│   │   ├── <span class="important">normalizer.py</span>        <span class="comment"># L1: lowercase, filler strip, spell correct</span>
+│   │   ├── tokenizer.py         <span class="comment"># L1: spaCy tokenize + POS tag</span>
+│   │   ├── <span class="important">intent_classifier.py</span> <span class="comment"># L2: load pkl model, predict intent + confidence</span>
+│   │   ├── entity_extractor.py  <span class="comment"># L2: spaCy NER + regex for dates, numbers, names</span>
+│   │   ├── <span class="important">schema_linker.py</span>     <span class="comment"># L2: rapidfuzz match tokens → table/column names</span>
+│   │   ├── <span class="important">ir_builder.py</span>        <span class="comment"># L4: assemble IR dataclass from L2 outputs</span>
+│   │   ├── template_engine.py   <span class="comment"># L4: match IR fingerprint to pre-written SQL</span>
+│   │   └── <span class="important">sql_compiler.py</span>      <span class="comment"># L5: IR dataclass → SQL string (pure Python)</span>
+│   │
+│   ├── <span class="dir">cache/</span>                   <span class="comment"># L3: Qdrant semantic cache</span>
+│   │   ├── semantic_cache.py    <span class="comment"># Embed query, search Qdrant, return hit/miss</span>
+│   │   └── cache_warmer.py      <span class="comment"># Seed + nightly refresh of Qdrant collection</span>
+│   │
+│   ├── <span class="dir">router/</span>                  <span class="comment"># L6: Confidence scoring + LangGraph routing</span>
+│   │   ├── <span class="important">confidence_scorer.py</span> <span class="comment"># Combine 4 signals into one 0-1 score</span>
+│   │   └── <span class="important">langgraph_router.py</span>  <span class="comment"># StateGraph: deterministic vs LLM fallback</span>
+│   │
+│   ├── <span class="dir">llm/</span>                     <span class="comment"># LLM fallback — only invoked by router</span>
+│   │   ├── fallback_handler.py  <span class="comment"># Call LLM with narrow schema-linked prompt</span>
+│   │   └── prompt_builder.py    <span class="comment"># Build minimal, context-rich LLM prompt</span>
+│   │
+│   ├── <span class="dir">validator/</span>               <span class="comment"># L7: Guardrails — every SQL goes through this</span>
+│   │   ├── <span class="important">syntax_validator.py</span>  <span class="comment"># sqlglot parse check</span>
+│   │   ├── <span class="important">safety_guard.py</span>      <span class="comment"># Block INSERT/UPDATE/DELETE/DROP at AST level</span>
+│   │   ├── whitelist.py         <span class="comment"># Verify only permitted tables/columns are accessed</span>
+│   │   └── dry_run.py           <span class="comment"># EXPLAIN query — check plan without executing</span>
+│   │
+│   ├── <span class="dir">db/</span>                      <span class="comment"># L4 (graph) + L8 (execution)</span>
+│   │   ├── <span class="important">schema_graph.py</span>      <span class="comment"># networkx graph of FK relationships for JOIN BFS</span>
+│   │   ├── executor.py          <span class="comment"># SQLAlchemy connection pool + query runner</span>
+│   │   └── result_formatter.py  <span class="comment"># Raw rows → structured JSON response</span>
+│   │
+│   └── <span class="dir">feedback/</span>                <span class="comment"># L9: Logging + improvement loop</span>
+│       ├── query_logger.py      <span class="comment"># Log every (nl, sql, source, success) tuple</span>
+│       ├── miss_tracker.py      <span class="comment"># Flag LLM fallbacks for manual review queue</span>
+│       └── dataset_grower.py    <span class="comment"># Append confirmed pairs to training CSV</span>
+│
+├── <span class="dir">models/</span>                      <span class="comment"># Serialized ML artifacts</span>
+│   ├── intent_classifier.pkl    <span class="comment"># Trained sklearn model (joblib)</span>
+│   └── label_encoder.pkl        <span class="comment"># Intent label encoder</span>
+│
+├── <span class="dir">schema/</span>                      <span class="comment"># Your DB knowledge — edit these as schema evolves</span>
+│   ├── <span class="important">schema.json</span>              <span class="comment"># Tables, columns, types, FK relationships</span>
+│   ├── <span class="important">synonyms.json</span>            <span class="comment"># "revenue" → total_amount, "staff" → employees, etc.</span>
+│   └── <span class="important">templates.json</span>           <span class="comment"># 20-30 SQL templates with named slots</span>
+│
+├── <span class="dir">data/</span>
+│   ├── <span class="dir">training/</span>
+│   │   └── intent_dataset.csv   <span class="comment"># (nl_query, intent) labeled pairs for classifier</span>
+│   └── <span class="dir">seed_cache/</span>
+│       └── nl_sql_pairs.json    <span class="comment"># Seed (NL, SQL) pairs to pre-warm Qdrant</span>
+│
+├── <span class="dir">notebooks/</span>                   <span class="comment"># Exploration + training — not in production</span>
+│   ├── 01_intent_classifier.ipynb
+│   └── 02_schema_analysis.ipynb
+│
+├── <span class="dir">tests/</span>
+│   ├── test_pipeline.py         <span class="comment"># Unit tests for each pipeline component</span>
+│   ├── test_validator.py        <span class="comment"># Safety + syntax validation tests</span>
+│   ├── test_cache.py            <span class="comment"># Cache hit/miss accuracy tests</span>
+│   └── test_router.py           <span class="comment"># LangGraph routing decision tests</span>
+│
+├── <span class="dir">docker/</span>
+│   ├── Dockerfile
+│   └── docker-compose.yml       <span class="comment"># FastAPI + Qdrant + PostgreSQL</span>
+│
+├── .env                         <span class="comment"># OPENAI_API_KEY, DB_URL, QDRANT_URL</span>
+├── requirements.txt
+└── README.md</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ─── BUILD SEQUENCE ────────────────────────────────────────────────────────── -->
+<div class="section" id="sequence">
+  <div class="section-label">Development Roadmap</div>
+  <div class="section-title">Build Sequence — 11 Phases</div>
+  <div class="section-desc">Follow this exact order. Each phase produces a testable output before moving on. Never skip ahead — the IR and schema linker are load-bearing; everything plugs into them.</div>
+
+  <div class="phases">
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 0</span>
+        <div>
+          <div class="phase-title">Foundation — Project Skeleton + Schema</div>
+          <div class="phase-time">Day 1–2</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>Create full directory structure (even empty files) so imports never break</li>
+            <li>Set up virtual env, install all dependencies, write requirements.txt</li>
+            <li>Write schema.json — your complete e-commerce schema: tables, columns, types, FK edges</li>
+            <li>Write synonyms.json — first pass: 20–30 domain-specific word→column mappings</li>
+            <li>Docker Compose: FastAPI + Qdrant + PostgreSQL running locally</li>
+          </ul>
+        </div>
+        <div class="phase-output">schema.json, synonyms.json, docker-compose.yml — project boots cleanly</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 1</span>
+        <div>
+          <div class="phase-title">Pre-Processing Layer</div>
+          <div class="phase-time">Day 2–3</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>normalizer.py: lowercase, filler word strip, pyspellchecker, date normalization</li>
+            <li>tokenizer.py: spaCy pipeline (en_core_web_sm), POS tags, lemmatization</li>
+            <li>Test: manually run 50 sample e-commerce queries through both, inspect outputs</li>
+          </ul>
+        </div>
+        <div class="phase-output">normalizer + tokenizer tested on 50 queries — clean token lists with POS</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 2</span>
+        <div>
+          <div class="phase-title">Schema Linker — The Critical One</div>
+          <div class="phase-time">Day 3–5</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>schema_linker.py: rapidfuzz WRatio matching between query tokens and all column/table names</li>
+            <li>Synonym expansion: check synonyms.json first before fuzzy matching</li>
+            <li>Return: {token: (table, column, match_score)} for all query tokens above threshold</li>
+            <li>Expand synonyms.json based on test failures — this file is your main lever here</li>
+          </ul>
+        </div>
+        <div class="phase-block">
+          <h4>Why this order</h4>
+          <ul>
+            <li>The IR builder and template engine depend on schema links — nothing downstream works without this</li>
+          </ul>
+        </div>
+        <div class="phase-output">Schema linker achieving >85% accuracy on 50 manually tested queries</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 3</span>
+        <div>
+          <div class="phase-title">IR Builder + JOIN Resolver</div>
+          <div class="phase-time">Day 5–8</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>Define IR dataclass with all fields: select, from_, joins, where, group_by, order_by, limit</li>
+            <li>schema_graph.py: load schema.json into a networkx DiGraph, FK edges as weights</li>
+            <li>join_resolver.py: BFS from source table to target table, collect JOIN chain</li>
+            <li>ir_builder.py: wire L2 outputs (intent, entities, schema links) into IR fields</li>
+            <li>Test with hand-crafted inputs — don't rely on upstream components yet</li>
+          </ul>
+        </div>
+        <div class="phase-output">IR correctly built for 10 hand-written test cases — JOINs auto-resolved</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 4</span>
+        <div>
+          <div class="phase-title">IR → SQL Compiler + Template Engine</div>
+          <div class="phase-time">Day 8–11</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>sql_compiler.py: serialize IR dataclass → SQL string, handle all clause types</li>
+            <li>templates.json: write 20–30 SQL templates for most common e-commerce patterns</li>
+            <li>template_engine.py: intent + entity fingerprint → template match → slot fill</li>
+            <li>Integration test: full L1→L2→L4→L5 pipeline on 20 real queries</li>
+          </ul>
+        </div>
+        <div class="phase-output">End-to-end pipeline producing valid SQL for common queries — zero LLM calls</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 5</span>
+        <div>
+          <div class="phase-title">Semantic Cache (Qdrant)</div>
+          <div class="phase-time">Day 11–13</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>Create Qdrant collection with sentence-transformer embeddings (all-MiniLM-L6-v2)</li>
+            <li>Write nl_sql_pairs.json: 50 seed (NL, SQL) pairs for your e-commerce domain</li>
+            <li>cache_warmer.py: embed + upsert all seed pairs into Qdrant on startup</li>
+            <li>semantic_cache.py: embed incoming query, cosine search, return hit/miss</li>
+            <li>Test similarity threshold — try 0.90, 0.92, 0.95 and observe false positives</li>
+          </ul>
+        </div>
+        <div class="phase-output">Cache returning correct SQL for paraphrased versions of seed queries</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 6</span>
+        <div>
+          <div class="phase-title">Intent Classifier (ML Component)</div>
+          <div class="phase-time">Day 13–16</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>Label 200–300 e-commerce NL queries with intents in intent_dataset.csv</li>
+            <li>Notebook: TF-IDF + Logistic Regression, 5-fold cross-validation, target >85% accuracy</li>
+            <li>Serialize model + label encoder with joblib → models/ directory</li>
+            <li>intent_classifier.py: load pkl, predict intent + confidence probability</li>
+            <li>If accuracy < 85%, expand training data before moving to next phase</li>
+          </ul>
+        </div>
+        <div class="phase-output">Intent classifier with >85% accuracy, model saved to models/</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 7</span>
+        <div>
+          <div class="phase-title">Confidence Scorer + LangGraph Router</div>
+          <div class="phase-time">Day 16–18</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>confidence_scorer.py: weighted combination of 4 signals, tune weights on test queries</li>
+            <li>langgraph_router.py: StateGraph with 3 conditional edges (high/low/unsafe)</li>
+            <li>fallback_handler.py: LLM call with prompt_builder.py generating narrow schema prompt</li>
+            <li>Wire the full pipeline through the router — this is the integration milestone</li>
+          </ul>
+        </div>
+        <div class="phase-output">Full L1→L9 pipeline running end-to-end including LLM fallback path</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 8</span>
+        <div>
+          <div class="phase-title">Validation Layer</div>
+          <div class="phase-time">Day 18–19</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>syntax_validator.py: sqlglot.parse() — catch syntax errors before DB hits</li>
+            <li>safety_guard.py: AST-level read-only enforcement + string-level DML block</li>
+            <li>whitelist.py: extract AST table/column refs, compare against schema.json</li>
+            <li>dry_run.py: EXPLAIN the query, handle DB errors, gate on row count estimate</li>
+            <li>Test all guards with adversarial inputs including SQL injection attempts</li>
+          </ul>
+        </div>
+        <div class="phase-output">All 4 guards passing — zero unsafe queries reach the executor</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 9</span>
+        <div>
+          <div class="phase-title">Execution + Feedback Loop</div>
+          <div class="phase-time">Day 19–21</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>executor.py: SQLAlchemy connection pool, query timeout, empty result handling</li>
+            <li>result_formatter.py: rows → JSON with columns, row_count, source, execution_time_ms</li>
+            <li>query_logger.py: async log every tuple to PostgreSQL table</li>
+            <li>miss_tracker.py: write LLM-sourced queries to review queue table</li>
+            <li>dataset_grower.py: append confirmed pairs to intent_dataset.csv nightly</li>
+          </ul>
+        </div>
+        <div class="phase-output">End-to-end system returning formatted results + logging all queries</div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-header">
+        <span class="phase-num">Phase 10 &amp; 11</span>
+        <div>
+          <div class="phase-title">FastAPI Endpoint + Tests + Docker</div>
+          <div class="phase-time">Day 21–25</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="phase-block">
+          <h4>Build</h4>
+          <ul>
+            <li>main.py: POST /query endpoint, request/response Pydantic models, startup cache warmer</li>
+            <li>GET /metrics: LLM bypass rate, cache hit rate, average latency</li>
+            <li>Write full test suite: unit tests per component + integration tests</li>
+            <li>Finalize Dockerfile + docker-compose (FastAPI + Qdrant + PostgreSQL)</li>
+            <li>Load test: 100 concurrent queries, check latency and correctness</li>
+          </ul>
+        </div>
+        <div class="phase-output">Production-ready API — documented, containerized, tested</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TECH STACK ────────────────────────────────────────────────────────────── -->
+<div class="section" id="techstack">
+  <div class="section-label">Tools &amp; Libraries</div>
+  <div class="section-title">Tech Stack — Layer by Layer</div>
+  <div class="section-desc">Every tool chosen for a specific reason — no bloat. The entire pipeline runs without internet access except for the LLM fallback.</div>
+  <div class="tech-grid">
+    <div class="tech-card">
+      <div class="tech-card-name">spaCy</div>
+      <div class="tech-card-purpose">Tokenization, POS tagging, Named Entity Recognition</div>
+      <div class="tech-card-layer">L1, L2 · Pre-Processing + Understanding</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">pyspellchecker</div>
+      <div class="tech-card-purpose">Spell correction for user input normalization</div>
+      <div class="tech-card-layer">L1 · Pre-Processing</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">rapidfuzz</div>
+      <div class="tech-card-purpose">Fuzzy string matching for schema linking — handles typos and synonyms</div>
+      <div class="tech-card-layer">L2 · Schema Linker</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">scikit-learn</div>
+      <div class="tech-card-purpose">TF-IDF + Logistic Regression intent classifier, joblib serialization</div>
+      <div class="tech-card-layer">L2 · Intent Classifier</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">Qdrant</div>
+      <div class="tech-card-purpose">Vector database for semantic cache — stores (NL query, SQL) embeddings</div>
+      <div class="tech-card-layer">L3 · Semantic Cache</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">sentence-transformers</div>
+      <div class="tech-card-purpose">all-MiniLM-L6-v2 — fast local embedding model for cache queries</div>
+      <div class="tech-card-layer">L3 · Semantic Cache</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">networkx</div>
+      <div class="tech-card-purpose">Schema as a directed graph; BFS for automatic JOIN chain resolution</div>
+      <div class="tech-card-layer">L4 · JOIN Resolver</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">python-dateutil</div>
+      <div class="tech-card-purpose">Parse "last month", "Q3 2024", "yesterday" into date ranges</div>
+      <div class="tech-card-layer">L2 · Entity Extractor</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">sqlglot</div>
+      <div class="tech-card-purpose">SQL parser for syntax validation and AST-level safety checking</div>
+      <div class="tech-card-layer">L7 · Validation</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">LangGraph</div>
+      <div class="tech-card-purpose">StateGraph for conditional routing — deterministic vs LLM fallback path</div>
+      <div class="tech-card-layer">L6 · Router</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">SQLAlchemy</div>
+      <div class="tech-card-purpose">Connection pooling + query execution against PostgreSQL</div>
+      <div class="tech-card-layer">L8 · Execution</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">FastAPI</div>
+      <div class="tech-card-purpose">HTTP API layer — single /query endpoint, async, Pydantic validation</div>
+      <div class="tech-card-layer">API Layer</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">OpenAI / Gemini API</div>
+      <div class="tech-card-purpose">LLM fallback only — called with narrow, schema-linked prompt</div>
+      <div class="tech-card-layer">L6 · LLM Fallback</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">Docker Compose</div>
+      <div class="tech-card-purpose">Orchestrate FastAPI + Qdrant + PostgreSQL as a single deployable stack</div>
+      <div class="tech-card-layer">Infrastructure</div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-name">APScheduler</div>
+      <div class="tech-card-purpose">Schedule nightly cache warmer and dataset grower jobs</div>
+      <div class="tech-card-layer">L9 · Feedback</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── METRICS ───────────────────────────────────────────────────────────────── -->
+<div class="section" id="metrics">
+  <div class="section-label">Success Criteria</div>
+  <div class="section-title">How to Measure Progress</div>
+  <div class="section-desc">Track these metrics from day one. Your system is improving when LLM bypass rate goes up and fallback rate goes down over time.</div>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-val">80%+</div>
+      <div class="metric-label">Queries resolved without any LLM call (primary goal)</div>
+      <div class="metric-note">Target after 1000 queries of traffic + cache warmup</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--green)">
+      <div class="metric-val" style="color:var(--green)">90%+</div>
+      <div class="metric-label">Schema linking accuracy on your e-commerce domain</div>
+      <div class="metric-note">Test on 100 queries with manually verified correct mappings</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:90%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--amber)">
+      <div class="metric-val" style="color:var(--amber)">40%+</div>
+      <div class="metric-label">Cache hit rate after 1000 queries</div>
+      <div class="metric-note">Real e-commerce query patterns repeat heavily — tune threshold if below this</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:40%;background:linear-gradient(90deg,var(--amber-dim),var(--amber))"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--green)">
+      <div class="metric-val" style="color:var(--green)">85%+</div>
+      <div class="metric-label">Intent classifier accuracy (5-fold cross-validation)</div>
+      <div class="metric-note">If below this, add more training examples before wiring into pipeline</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:85%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--red)">
+      <div class="metric-val" style="color:var(--red)">0%</div>
+      <div class="metric-label">Unsafe queries reaching the executor (hard requirement)</div>
+      <div class="metric-note">Any INSERT / UPDATE / DROP that passes validation is a critical bug</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:0%;background:var(--red)"></div></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val">&lt;200ms</div>
+      <div class="metric-label">P95 latency for deterministic path (no LLM)</div>
+      <div class="metric-note">Cache hit path should be under 80ms. LLM path: 1–3s is acceptable.</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--purple)">
+      <div class="metric-val" style="color:var(--purple)">↓ over time</div>
+      <div class="metric-label">LLM fallback rate — should shrink as cache and templates grow</div>
+      <div class="metric-note">Week 1: ~40%. Week 4: target &lt;20%. Miss tracker drives this down.</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:60%;background:linear-gradient(90deg,var(--purple),var(--cyan))"></div></div>
+    </div>
+    <div class="metric-card" style="border-top-color:var(--green)">
+      <div class="metric-val" style="color:var(--green)">95%+</div>
+      <div class="metric-label">SQL validation pass rate (compiled SQL must be valid)</div>
+      <div class="metric-note">If below this, the IR→SQL compiler has edge cases — add test coverage</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:95%;background:linear-gradient(90deg,var(--green-dim),var(--green))"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── KEY RULES ────────────────────────────────────────────────────────────── -->
+<div style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem 3rem;border-bottom:1px solid var(--border)">
+  <div class="section-label">Non-Negotiables</div>
+  <div class="section-title">Rules to Build By</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-top:1.5rem">
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--cyan);margin-bottom:.4rem">Build schema.json first</div>
+      <div style="font-size:.8rem;color:var(--text-2)">Every other component is driven by it. If your schema changes, update schema.json + synonyms.json — not the code.</div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--green);margin-bottom:.4rem">Test each layer in isolation</div>
+      <div style="font-size:.8rem;color:var(--text-2)">Feed hand-crafted inputs to each component before wiring them together. A bug in the schema linker will silently corrupt everything downstream.</div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--amber);margin-bottom:.4rem">Log everything from day one</div>
+      <div style="font-size:.8rem;color:var(--text-2)">Your log is your training data. Every query that reaches the LLM is an opportunity — if verified correct, it becomes a future cache entry.</div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--red);margin-bottom:.4rem">Never trust LLM SQL directly</div>
+      <div style="font-size:.8rem;color:var(--text-2)">Even LLM-generated SQL must pass all 4 validation guards. The LLM fallback is a smart assistant, not an authority.</div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--purple);margin-bottom:.4rem">Track source on every response</div>
+      <div style="font-size:.8rem;color:var(--text-2)">Every API response must say whether SQL came from cache | template | deterministic | llm. This is how you know if you're improving.</div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-left:3px solid var(--cyan);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--cyan);margin-bottom:.4rem">Tune synonyms.json continuously</div>
+      <div style="font-size:.8rem;color:var(--text-2)">This single file has more impact on accuracy than any ML component. Every miss from schema linking is a new synonym entry.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  NLP2SQL Project Blueprint &nbsp;·&nbsp; Built for Akshat Jain &nbsp;·&nbsp; CTAE Udaipur &nbsp;·&nbsp; <span style="color:var(--cyan)">Minimal LLM · Maximum Determinism</span>
+</footer>
+
+<script>
+// Smooth section scroll for pipeline stages
+function scrollTo(id) {
+  const el = document.querySelector(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Nav active section highlight
+const sections = document.querySelectorAll('[id]');
+const navLinks = document.querySelectorAll('nav a');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+      });
+    }
+  });
+}, { threshold: 0.3, rootMargin: '-60px 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+
+// Pipeline stage glow animation — sequence through stages on load
+const stages = document.querySelectorAll('.pipeline-stage');
+let i = 0;
+const cycle = () => {
+  stages.forEach(s => s.classList.remove('active-demo'));
+  if (stages[i]) stages[i].classList.add('active-demo');
+  i = (i + 1) % stages.length;
+};
+let seq = setInterval(cycle, 700);
+// Stop after one full cycle
+setTimeout(() => {
+  clearInterval(seq);
+  stages.forEach(s => s.classList.remove('active-demo'));
+}, stages.length * 700 + 200);
+</script>
+</body>
+</html>

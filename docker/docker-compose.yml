@@ -6,8 +6,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:admin@localhost:5432/ecommerce
+      - DATABASE_URL=postgresql+psycopg2://postgres:admin@host.docker.internal:5432/ecommerce
       - QDRANT_HOST=host.docker.internal
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ../models:/code/models

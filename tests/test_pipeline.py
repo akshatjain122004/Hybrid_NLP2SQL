@@ -480,3 +480,18 @@ def test_api_empty_query_rejected():
     with TestClient(app) as client:
         response = client.post("/query", json={"query": "   "})
         assert response.status_code == 400
+        
+from app.cache.semantic_cache import add_to_cache
+
+def test_cache_learns_from_llm_fallback():
+    engine = get_qdrant_client(location=":memory:")
+    warm_cache(client=engine)
+
+    query = "revenue split across product categories"
+    assert check_cache(query, client=engine, threshold=0.90)["hit"] is False
+
+    add_to_cache(query, "SELECT categories.category_name, SUM(order_items.quantity) FROM order_items ...", client=engine)
+
+    result = check_cache(query, client=engine, threshold=0.90)
+    assert result["hit"] is True
+    assert result["matched_query"] == query

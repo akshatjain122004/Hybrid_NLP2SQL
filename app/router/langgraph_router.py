@@ -16,6 +16,29 @@ from app.db.schema_graph import build_schema_graph
 
 HIGH_THRESHOLD = 0.75
 
+KNOWN_CATEGORICAL_VALUES = {
+    "country": ["india", "usa", "uk", "united states", "germany", "france", "canada", "japan", "brazil", "china", "australia"],
+    "status": ["pending", "shipped", "delivered", "cancelled"],
+    "department": ["sales", "support", "it", "marketing"],
+    "payment_method": ["credit card", "paypal", "cash", "debit card"],
+}
+
+
+def _find_categorical_column(proper_noun: str, schema_links: dict, schema: dict):
+    """
+    Matches a proper noun (e.g. "India") against a curated set of known values per
+    category, then looks for a column with that exact name among the schema-linked
+    tables. Deliberately narrow -- a curated lookup for common filter cases (country,
+    status, department, payment method), not general NER-to-column grounding for
+    arbitrary free-text values. Returns (column, value) or None.
+    """
+    lowered = proper_noun.lower()
+    for column_name, known_values in KNOWN_CATEGORICAL_VALUES.items():
+        if lowered in known_values:
+            for table in schema_links:
+                if column_name in schema["tables"].get(table, {}).get("columns", {}):
+                    return f"{table}.{column_name}", proper_noun
+    return None
 
 class PipelineState(TypedDict, total=False):
     raw_query: str
@@ -29,6 +52,7 @@ class PipelineState(TypedDict, total=False):
     source: str
     error: Optional[str]
     _linked: dict
+    tokens: Optional[dict]
 
 
 def _find_date_column(schema_links: dict, schema: dict) -> Optional[str]:
@@ -40,18 +64,6 @@ def _find_date_column(schema_links: dict, schema: dict) -> Optional[str]:
 
 
 def translate_entities(intent: str, raw_entities: dict, schema_links: dict, schema: dict) -> dict:
-    """
-    Translates entity_extractor.py's generic output into the per-intent shape
-    build_ir() / template_engine.py expect.
-
-    Known, deliberate scope limit: this only handles date-range WHERE clauses and
-    top_n limit/order_dir -- the well-defined cases. It does NOT infer which column
-    a proper noun (e.g. "India") should filter on, or which column to ORDER BY for
-    top_n. Those require real semantic grounding this rule-based layer doesn't have.
-    Leaving them empty is intentional: it lowers entity_completeness in the confidence
-    scorer, which correctly routes those queries to the LLM fallback instead of
-    producing a wrong deterministic answer with false confidence.
-    """
     entities = {}
 
     if raw_entities.get("date_range"):
@@ -60,6 +72,12 @@ def translate_entities(intent: str, raw_entities: dict, schema_links: dict, sche
             entities.setdefault("where", []).append({
                 "column": date_col, "operator": "BETWEEN", "value": raw_entities["date_range"],
             })
+
+    for proper_noun in raw_entities.get("proper_nouns", []):
+        match = _find_categorical_column(proper_noun, schema_links, schema)
+        if match:
+            column, value = match
+            entities.setdefault("where", []).append({"column": column, "operator": "=", "value": value})
 
     if intent == "top_n":
         if raw_entities.get("numbers"):
@@ -123,9 +141,13 @@ def finalize_high(state):
 
 
 def fallback_node(state, deps, llm_client=None):
-    sql = call_llm_fallback(state["raw_query"], state["schema_links"], state["intent"],
-                             state["entities"], client=llm_client)
-    return {**state, "sql": sql, "source": "llm_fallback", "error": None}
+    result = call_llm_fallback(state["raw_query"], state["schema_links"], state["intent"],
+                                state["entities"], client=llm_client)
+    sql, tokens = result["sql"], result["tokens"]
+    if sql.strip() == "NOT_SUPPORTED":
+        return {**state, "sql": None, "source": "unsupported", "tokens": tokens,
+                "error": "This system can only answer questions about existing data -- it can't generate, insert, or modify records."}
+    return {**state, "sql": sql, "source": "llm_fallback", "tokens": tokens, "error": None}
 
 
 def reject_node(state):

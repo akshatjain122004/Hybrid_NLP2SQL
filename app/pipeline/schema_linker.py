@@ -235,15 +235,12 @@ class SchemaLinker:
 
     ##########################################################
 
-
     # REMOVE DUPLICATES
     ##########################################################
-
 
     ##########################################################
     # LINK SINGLE TOKEN
     ##########################################################
-
 
     def link_token(self, token: str):
 
@@ -263,26 +260,25 @@ class SchemaLinker:
     # MAIN API
     ##########################################################
 
-
     def link_schema(self, tokens):
 
         linked = {}
-        
+
         for token in tokens:
 
             word = token["lemma"].lower()
 
             # Ignore semantic date tokens
-            
+
             if word.startswith("date_"):
                 continue
-            
+
             if word.isdigit():
                 continue
-            
+
             # if token["is_stop"]:
             #     continue
-            
+
             match = self.link_token(word)
 
             if match:
@@ -290,7 +286,6 @@ class SchemaLinker:
                 linked[word] = match
 
         return linked
-
 
     ##########################################################
     # PRETTY PRINTER
@@ -319,6 +314,7 @@ def print_links(result: Dict):
                 f"Source={match['source']}"
             )
 
+
 def to_schema_links(linked: Dict) -> Dict[str, List[str]]:
     """
     Normalizes SchemaLinker's mixed output shapes into {table: [col, col, ...]}
@@ -340,6 +336,7 @@ def to_schema_links(linked: Dict) -> Dict[str, List[str]]:
     ##########################################################
     # LOCAL TESTING
     ##########################################################
+
 
 if __name__ == "__main__":
 

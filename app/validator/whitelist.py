@@ -14,11 +14,10 @@ def _load_schema(path: Path = SCHEMA_PATH) -> dict:
 
 def check_whitelist(sql: str, schema: dict = None, dialect: str = "postgres") -> dict:
     """
-    Note: column check is name-based, not table-scoped -- it confirms every referenced
-    column exists SOMEWHERE in schema.json, not that it belongs to the specific table
-    it's used against. Good enough to catch hallucinated/nonexistent columns; not a
-    full binder. A real per-table binding check would need alias resolution, which
-    is a bigger addition than this guard's job calls for.
+    Note: column check is name-based, not table-scoped -- see prior caveat. Also
+    excludes SELECT-list aliases (e.g. `SUM(...) AS total_profit`) from the check,
+    since those are legitimate query-defined names, not schema references -- and
+    they're commonly reused in ORDER BY / GROUP BY, which is valid standard SQL.
     """
     schema = schema or _load_schema()
     valid_tables = set(schema["tables"].keys())
@@ -31,11 +30,18 @@ def check_whitelist(sql: str, schema: dict = None, dialect: str = "postgres") ->
     except Exception as e:
         return {"allowed": False, "bad_tables": [], "bad_columns": [], "error": f"unparseable: {e}"}
 
+    select_aliases = set()
+    for select_stmt in tree.find_all(exp.Select):
+        for projection in select_stmt.expressions:
+            alias = projection.alias
+            if alias:
+                select_aliases.add(alias)
+
     used_tables = {t.name for t in tree.find_all(exp.Table)}
     used_columns = {c.name for c in tree.find_all(exp.Column) if c.name != "*"}
 
     bad_tables = sorted(used_tables - valid_tables)
-    bad_columns = sorted(used_columns - valid_columns)
+    bad_columns = sorted(used_columns - valid_columns - select_aliases)
 
     return {
         "allowed": not (bad_tables or bad_columns),

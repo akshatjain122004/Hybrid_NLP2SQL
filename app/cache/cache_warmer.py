@@ -19,26 +19,27 @@ def get_qdrant_client(location: str = "server", host: str = None, port: int = 63
     return QdrantClient(path=location)
 
 
-def warm_cache(client: QdrantClient = None, seed_path: Path = SEED_PATH) -> int:
+def warm_cache(client: QdrantClient = None, seed_path: Path = SEED_PATH, force: bool = False) -> int:
     client = client or get_qdrant_client()
-    model = SentenceTransformer(EMBEDDING_MODEL)
 
     with open(seed_path, "r", encoding="utf-8") as f:
         pairs = json.load(f)
 
+    if not force and client.collection_exists(COLLECTION_NAME):
+        existing_count = client.count(collection_name=COLLECTION_NAME).count
+        if existing_count >= len(pairs):
+            return existing_count  # already warmed from a previous run -- skip re-embedding
+
+    model = SentenceTransformer(EMBEDDING_MODEL)
+
     if not client.collection_exists(COLLECTION_NAME):
         client.create_collection(
             collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(
-                size=model.get_embedding_dimension(), distance=Distance.COSINE
-            ),
+            vectors_config=VectorParams(size=model.get_embedding_dimension(), distance=Distance.COSINE),
         )
 
     embeddings = model.encode([p["nl"] for p in pairs])
-    points = [
-        PointStruct(id=i, vector=embeddings[i].tolist(), payload=pairs[i])
-        for i in range(len(pairs))
-    ]
+    points = [PointStruct(id=i, vector=embeddings[i].tolist(), payload=pairs[i]) for i in range(len(pairs))]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
     return len(points)
 

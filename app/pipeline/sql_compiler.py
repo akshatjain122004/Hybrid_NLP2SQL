@@ -27,11 +27,16 @@ def compile_sql(ir: IR) -> str:
         clauses = []
         for cond in ir.where:
             col = f"{cond.table}.{cond.column}"
-            if cond.operator.upper() == "BETWEEN":
+            op = cond.operator.upper()
+            if op == "BETWEEN":
                 lo, hi = cond.value
                 clauses.append(f"{col} BETWEEN {format_value(lo)} AND {format_value(hi)}")
-            elif cond.operator.upper() == "IN":
+            elif op == "IN":
                 clauses.append(f"{col} IN {format_value(cond.value)}")
+            elif op in ("=", "!=") and isinstance(cond.value, str):
+                # case-insensitive by design -- exact casing in the DB isn't guaranteed
+                # (e.g. status stored as 'Cancelled', filter value coming in as 'cancelled')
+                clauses.append(f"LOWER({col}) {op} LOWER({format_value(cond.value)})")
             else:
                 clauses.append(f"{col} {cond.operator} {format_value(cond.value)}")
         parts.append("WHERE " + " AND ".join(clauses))
