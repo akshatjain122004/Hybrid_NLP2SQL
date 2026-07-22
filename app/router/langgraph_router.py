@@ -143,6 +143,9 @@ def finalize_high(state):
 def fallback_node(state, deps, llm_client=None):
     result = call_llm_fallback(state["raw_query"], state["schema_links"], state["intent"],
                                 state["entities"], client=llm_client)
+    if result["error"]:
+        return {**state, "sql": None, "source": "llm_unavailable", "tokens": None, "error": result["error"]}
+
     sql, tokens = result["sql"], result["tokens"]
     if sql.strip() == "NOT_SUPPORTED":
         return {**state, "sql": None, "source": "unsupported", "tokens": tokens,

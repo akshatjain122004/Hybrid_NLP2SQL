@@ -6,3 +6,4 @@ venv
 __pycache__/
 /test_join_resolver.py
 /test_schema_layer.py
+QA_DEBUG_REPORT.md
